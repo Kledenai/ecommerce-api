@@ -8,5 +8,6 @@ import { CartController } from 'modules/cart/cart.controller';
   imports: [PrismaModule, AuthModule],
   providers: [CartService],
   controllers: [CartController],
+  exports: [CartService],
 })
 export class CartModule {}

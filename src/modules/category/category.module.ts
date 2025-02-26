@@ -8,5 +8,6 @@ import { CategoryController } from 'modules/category/category.controller';
   imports: [PrismaModule, AuthModule],
   providers: [CategoryService],
   controllers: [CategoryController],
+  exports: [CategoryService],
 })
 export class CategoryModule {}

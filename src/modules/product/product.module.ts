@@ -8,5 +8,6 @@ import { ProductController } from 'modules/product/product.controller';
   imports: [PrismaModule, AuthModule],
   providers: [ProductService],
   controllers: [ProductController],
+  exports: [ProductService],
 })
 export class ProductModule {}

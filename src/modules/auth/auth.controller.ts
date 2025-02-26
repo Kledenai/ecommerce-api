@@ -1,12 +1,19 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from 'modules/auth/auth.service';
+import { LoginDto, LoginResponseDto } from 'modules/auth/dtos/login.dto';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
 
 @Controller('auth')
+@ApiTags('Authentication')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() body: { email: string; password: string }) {
+  @ApiOperation({ summary: 'User login', description: 'Authenticates a user with email and password.' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ status: 200, description: 'User authenticated successfully.', type: LoginResponseDto })
+  @ApiResponse({ status: 401, description: 'Invalid credentials or inactive account.' })
+  async login(@Body() body: LoginDto) {
     const { email, password } = body;
     const user = await this.authService.validateUser(email, password);
 

@@ -8,5 +8,6 @@ import { ShippingAddressController } from 'modules/shipping-address/shipping-add
   imports: [PrismaModule, AuthModule],
   providers: [ShippingAddressService],
   controllers: [ShippingAddressController],
+  exports: [ShippingAddressService],
 })
 export class ShippingAddressModule {}
