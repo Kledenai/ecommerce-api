@@ -32,6 +32,7 @@ model User {
   email             String            @unique
   password          String
   name              String
+  status            String            @default("active")
   cart              Cart[]
   Order             Order[]
   shippingAddresses ShippingAddress[]
@@ -66,23 +67,26 @@ model Order {
 }
 
 model OrderItem {
-  id        Int     @id @default(autoincrement())
   orderId   Int
   productId Int
   quantity  Int
-  Product   Product @relation(fields: [productId], references: [id])
   Order     Order   @relation(fields: [orderId], references: [id])
+  Product   Product @relation(fields: [productId], references: [id])
+
+  @@id([orderId, productId])
 }
 
 model ShippingAddress {
-  id           Int     @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   userId       Int
+  user         User     @relation(fields: [userId], references: [id])
   fullName     String
   addressLine1 String
   addressLine2 String?
   city         String
   state        String
-  postalCode   String
   country      String
-  User         User    @relation(fields: [userId], references: [id])
+  postalCode   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
