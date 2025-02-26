@@ -7,7 +7,7 @@ import {
   Delete,
   Controller,
 } from '@nestjs/common';
-import { CategoryService } from './category.service';
+import { CategoryService } from 'modules/category/category.service';
 
 @Controller('categories')
 export class CategoryController {
