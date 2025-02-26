@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
@@ -17,7 +17,7 @@ export class ProductService {
     });
 
     if (!category) {
-      throw new Error('Category not found');
+      throw new NotFoundException('Category not found');
     }
 
     return this.prisma.product.create({
@@ -48,7 +48,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new Error('Product not found');
+      throw new NotFoundException('Product not found');
     }
 
     return product;
@@ -64,7 +64,7 @@ export class ProductService {
       });
 
       if (!category) {
-        throw new Error('Category not found');
+        throw new NotFoundException('Category not found');
       }
     }
 
