@@ -10,6 +10,9 @@ const mockPrismaService = {
     findMany: jest.fn(),
     findUnique: jest.fn(),
   },
+  category: {
+    findUnique: jest.fn(),
+  },
 };
 
 describe('ProductService', () => {
@@ -37,16 +40,32 @@ describe('ProductService', () => {
         price: 100,
         description: 'A test product',
         imageUrl: 'http://image.url',
-        category: 'Category 1',
+        categoryId: 1,
       };
 
-      mockPrismaService.product.create.mockResolvedValue(productData);
+      mockPrismaService.category.findUnique.mockResolvedValue({
+        id: 1,
+        name: 'Category 1',
+      });
+
+      mockPrismaService.product.create.mockResolvedValue({
+        ...productData,
+      });
 
       const result = await service.createProduct(productData);
 
       expect(result).toEqual(productData);
       expect(mockPrismaService.product.create).toHaveBeenCalledWith({
-        data: productData,
+        data: {
+          name: productData.name,
+          price: productData.price,
+          description: productData.description || '',
+          imageUrl: productData.imageUrl,
+          categoryId: productData.categoryId,
+        },
+      });
+      expect(mockPrismaService.category.findUnique).toHaveBeenCalledWith({
+        where: { id: productData.categoryId },
       });
     });
   });
@@ -79,6 +98,7 @@ describe('ProductService', () => {
         name: 'Product 1',
         price: 100,
         description: 'A test product',
+        category: { id: 1, name: 'Category 1' },
       };
 
       mockPrismaService.product.findUnique.mockResolvedValue(product);
@@ -88,6 +108,7 @@ describe('ProductService', () => {
       expect(result).toEqual(product);
       expect(mockPrismaService.product.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
+        include: { category: true },
       });
     });
 

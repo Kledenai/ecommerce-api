@@ -21,7 +21,7 @@ export class ProductController {
       price: number;
       description?: string;
       imageUrl: string;
-      category: string;
+      categoryId: number;
     },
   ) {
     return this.productService.createProduct(body);
@@ -40,7 +40,7 @@ export class ProductController {
   @Put(':id')
   async updateProduct(
     @Param('id') id: number,
-    @Body() body: { name?: string; price?: number; description?: string },
+    @Body() body: { name?: string; price?: number; description?: string; categoryId?: number },
   ) {
     return this.productService.updateProduct(id, body);
   }

@@ -10,25 +10,42 @@ export class ProductService {
     price: number;
     description?: string;
     imageUrl: string;
-    category: string;
+    categoryId: number;
   }) {
+    const category = await this.prisma.category.findUnique({
+      where: { id: data.categoryId },
+    });
+
+    if (!category) {
+      throw new Error('Category not found');
+    }
+
     return this.prisma.product.create({
       data: {
         name: data.name,
         price: data.price,
         description: data.description || '',
         imageUrl: data.imageUrl,
-        category: data.category,
+        categoryId: data.categoryId,
       },
     });
   }
 
   async getProducts() {
-    return this.prisma.product.findMany();
+    return this.prisma.product.findMany({
+      include: {
+        category: true,
+      },
+    });
   }
 
   async getProductById(id: number) {
-    const product = await this.prisma.product.findUnique({ where: { id } });
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: true,
+      },
+    });
 
     if (!product) {
       throw new Error('Product not found');
@@ -39,8 +56,18 @@ export class ProductService {
 
   async updateProduct(
     id: number,
-    data: { name?: string; price?: number; description?: string },
+    data: { name?: string; price?: number; description?: string; categoryId?: number },
   ) {
+    if (data.categoryId) {
+      const category = await this.prisma.category.findUnique({
+        where: { id: data.categoryId },
+      });
+
+      if (!category) {
+        throw new Error('Category not found');
+      }
+    }
+
     return this.prisma.product.update({
       where: { id },
       data,
