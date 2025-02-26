@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'prisma/prisma.service';
-import { CartService } from './cart.service';
+import { CartService } from 'modules/cart/cart.service';
 
 const mockPrismaService = {
   cart: {
     create: jest.fn(),
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     delete: jest.fn(),
   },
@@ -50,19 +51,19 @@ describe('CartService', () => {
     it('should return a cart by user ID', async () => {
       const cart = { id: 1, userId: 1, items: [] };
 
-      mockPrismaService.cart.findUnique.mockResolvedValue(cart);
+      mockPrismaService.cart.findFirst.mockResolvedValue(cart);
 
       const result = await service.getCartByUserId(1);
 
       expect(result).toEqual(cart);
-      expect(mockPrismaService.cart.findUnique).toHaveBeenCalledWith({
+      expect(mockPrismaService.cart.findFirst).toHaveBeenCalledWith({
         where: { userId: 1 },
         include: { items: true },
       });
     });
 
     it('should throw an error if cart is not found', async () => {
-      mockPrismaService.cart.findUnique.mockResolvedValue(null);
+      mockPrismaService.cart.findFirst.mockResolvedValue(null);
 
       await expect(service.getCartByUserId(999)).rejects.toThrowError(
         'Cart not found',

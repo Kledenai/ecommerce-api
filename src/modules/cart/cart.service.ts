@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
@@ -20,7 +20,7 @@ export class CartService {
     });
   
     if (!cart) {
-      throw new Error('Cart not found');
+      throw new NotFoundException('Cart not found');
     }
   
     return cart;
