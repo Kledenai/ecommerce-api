@@ -1,7 +1,9 @@
-import { Controller, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { JwtAuthGuard } from 'modules/auth/jwt-auth.guard';
+import { Controller, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
 import { ShippingAddressService } from 'modules/shipping-address/shipping-address.service';
 
 @Controller('shipping-addresses')
+@UseGuards(JwtAuthGuard)  
 export class ShippingAddressController {
   constructor(private readonly shippingAddressService: ShippingAddressService) {}
 

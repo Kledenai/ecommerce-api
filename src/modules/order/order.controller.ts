@@ -5,11 +5,14 @@ import {
   Body,
   Param,
   Delete,
+  UseGuards,
   Controller,
 } from '@nestjs/common';
+import { JwtAuthGuard } from 'modules/auth/jwt-auth.guard';
 import { OrderService } from 'modules/order/order.service';
 
 @Controller('orders')
+@UseGuards(JwtAuthGuard)
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
