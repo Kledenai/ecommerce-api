@@ -12,6 +12,8 @@ export class AuthService {
 
   async validateUser(email: string, password: string) {
     const user = await this.usersService.getUserByEmail(email);
+
+    console.log(email, password)
     
     if (!user) {
       return null;
@@ -31,10 +33,10 @@ export class AuthService {
     const payload = { email: user.email, sub: user.id };
 
     try {
-      const accessToken = this.jwtService.sign(payload);
+      const token = this.jwtService.sign(payload);
 
       return {
-        accessToken,
+        token,
         user: {
           id: user.id,
           name: user.name,

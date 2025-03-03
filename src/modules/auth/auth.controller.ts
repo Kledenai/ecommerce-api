@@ -3,7 +3,7 @@ import { LoginDto, LoginResponseDto } from 'modules/auth/dtos/login.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
 
-@Controller('auth')
+@Controller('/')
 @ApiTags('Authentication')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
