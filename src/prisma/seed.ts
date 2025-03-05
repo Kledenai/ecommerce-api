@@ -27,42 +27,24 @@ async function main() {
     },
   });
 
-  console.log('Users created:');
-  console.log({ user1, user2 });
+  console.log('Users created:', { user1, user2 });
 
-  const category1 = await prisma.category.create({
-    data: {
-      name: 'Electronics',
-    },
-  });
+  const category1 = await prisma.category.create({ data: { name: 'Electronics' } });
+  const category2 = await prisma.category.create({ data: { name: 'Books' } });
+  const category3 = await prisma.category.create({ data: { name: 'Furniture' } });
+  const category4 = await prisma.category.create({ data: { name: 'Clothing' } });
 
-  const category2 = await prisma.category.create({
-    data: {
-      name: 'Books',
-    },
-  });
+  console.log('Categories created:', { category1, category2, category3, category4 });
 
-  const category3 = await prisma.category.create({
-    data: {
-      name: 'Furniture',
-    },
-  });
-
-  const category4 = await prisma.category.create({
-    data: {
-      name: 'Clothing',
-    },
-  });
-
-  console.log('Categories created:');
-  console.log({ category1, category2, category3, category4 });
+  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  const productImagesBasePath = `${appUrl}/uploads/products/`;
 
   const product1 = await prisma.product.create({
     data: {
       name: 'Smartphone',
       description: 'A brand new smartphone with amazing features.',
       price: 699.99,
-      imageUrl: 'https://example.com/smartphone.jpg',
+      imageUrl: `${productImagesBasePath}smartphone.png`,
       categoryId: category1.id,
     },
   });
@@ -72,7 +54,7 @@ async function main() {
       name: 'Laptop',
       description: 'A powerful laptop for work and play.',
       price: 999.99,
-      imageUrl: 'https://example.com/laptop.jpg',
+      imageUrl: `${productImagesBasePath}laptop.png`,
       categoryId: category1.id,
     },
   });
@@ -82,7 +64,7 @@ async function main() {
       name: 'JavaScript for Beginners',
       description: 'A comprehensive guide to learning JavaScript.',
       price: 19.99,
-      imageUrl: 'https://example.com/javascript-book.jpg',
+      imageUrl: `${productImagesBasePath}javascript-for-beginners.png`,
       categoryId: category2.id,
     },
   });
@@ -92,7 +74,7 @@ async function main() {
       name: 'Modern Sofa',
       description: 'A comfy and stylish modern sofa.',
       price: 899.99,
-      imageUrl: 'https://example.com/sofa.jpg',
+      imageUrl: `${productImagesBasePath}mordern-sofa.png`,
       categoryId: category3.id,
     },
   });
@@ -102,7 +84,7 @@ async function main() {
       name: 'Designer Shirt',
       description: 'A trendy shirt for all occasions.',
       price: 49.99,
-      imageUrl: 'https://example.com/shirt.jpg',
+      imageUrl: `${productImagesBasePath}designer-shirt.png`,
       categoryId: category4.id,
     },
   });
@@ -112,13 +94,12 @@ async function main() {
       name: 'Gaming Headset',
       description: 'An immersive gaming headset with surround sound.',
       price: 129.99,
-      imageUrl: 'https://example.com/headset.jpg',
+      imageUrl: `${productImagesBasePath}gaming-headset.png`,
       categoryId: category1.id,
     },
   });
 
-  console.log('Products created:');
-  console.log({ product1, product2, product3, product4, product5, product6 });
+  console.log('Products created:', { product1, product2, product3, product4, product5, product6 });
 
   const cart1 = await prisma.cart.create({
     data: {
@@ -144,8 +125,7 @@ async function main() {
     },
   });
 
-  console.log('Carts created:');
-  console.log({ cart1, cart2 });
+  console.log('Carts created:', { cart1, cart2 });
 
   const order1 = await prisma.order.create({
     data: {
@@ -175,8 +155,7 @@ async function main() {
     },
   });
 
-  console.log('Orders created:');
-  console.log({ order1, order2 });
+  console.log('Orders created:', { order1, order2 });
 
   const address1 = await prisma.shippingAddress.create({
     data: {
@@ -202,8 +181,7 @@ async function main() {
     },
   });
 
-  console.log('Shipping addresses created:');
-  console.log({ address1, address2 });
+  console.log('Shipping addresses created:', { address1, address2 });
 }
 
 main()
