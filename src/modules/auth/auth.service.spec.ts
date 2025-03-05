@@ -1,13 +1,30 @@
+import { UserService } from 'modules/user/user.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { UserService } from 'modules/user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import { PrismaService } from 'prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('hashed-password'),
+  compare: jest.fn().mockImplementation(async () => true),
+}));
+
+const mockPrismaService = {
+  user: {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    findMany: jest.fn(),
+  },
+};
 
 describe('AuthService', () => {
   let authService: AuthService;
   let userService: UserService;
   let jwtService: JwtService;
+  let prismaService: PrismaService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,12 +42,17 @@ describe('AuthService', () => {
             sign: jest.fn().mockReturnValue('mocked_token'),
           },
         },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
+        },
       ],
     }).compile();
 
     authService = module.get<AuthService>(AuthService);
     userService = module.get<UserService>(UserService);
     jwtService = module.get<JwtService>(JwtService);
+    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   it('should be defined', () => {
@@ -42,13 +64,13 @@ describe('AuthService', () => {
       const mockUser = {
         id: 1,
         email: 'test@example.com',
-        password: await bcrypt.hash('password', 10),
+        password: 'hashed-password',
         name: 'Test User',
         status: 'active',
       };
 
       jest.spyOn(userService, 'getUserByEmail').mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compareSync').mockReturnValue(true);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
 
       const result = await authService.validateUser('test@example.com', 'password');
 
@@ -72,13 +94,13 @@ describe('AuthService', () => {
       const mockUser = {
         id: 1,
         email: 'test@example.com',
-        password: await bcrypt.hash('password', 10),
+        password: 'hashed-password',
         name: 'Test User',
         status: 'active',
       };
 
       jest.spyOn(userService, 'getUserByEmail').mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compareSync').mockReturnValue(false);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
 
       const result = await authService.validateUser('test@example.com', 'wrongpassword');
       expect(result).toBeNull();
@@ -86,7 +108,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should return access token and user data', async () => {
+    it('should return accessToken and user data', async () => {
       const mockUser = {
         id: 1,
         email: 'test@example.com',
@@ -97,7 +119,7 @@ describe('AuthService', () => {
       const result = await authService.login(mockUser);
 
       expect(result).toEqual({
-        access_token: 'mocked_token',
+        accessToken: 'mocked_token',
         user: mockUser,
       });
       expect(jwtService.sign).toHaveBeenCalledWith({ email: mockUser.email, sub: mockUser.id });
