@@ -10,9 +10,6 @@ export class CreateProductDto {
   @ApiProperty({ example: 'A high-performance laptop', description: 'Product description', required: false })
   description?: string;
 
-  @ApiProperty({ example: 'https://example.com/laptop.jpg', description: 'Image URL of the product' })
-  imageUrl: string;
-
   @ApiProperty({ example: 1, description: 'ID of the product category' })
   categoryId: number;
 }

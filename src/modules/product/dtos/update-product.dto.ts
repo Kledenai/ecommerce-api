@@ -13,4 +13,7 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
 
   @ApiProperty({ example: 2, description: 'Updated category ID', required: false })
   categoryId?: number;
+
+  @ApiProperty({ example: 'https://example.com/laptop.jpg', description: 'Updated image URL', required: false })
+  imageUrl?: string;
 }
