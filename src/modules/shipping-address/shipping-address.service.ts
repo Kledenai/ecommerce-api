@@ -1,12 +1,21 @@
-import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ShippingAddressService {
   constructor(private prisma: PrismaService) {}
 
-  async createShippingAddress(data: {
-    userId: number;
+  async validateAddressOwnership(userId: number, id: number) {
+    const address = await this.prisma.shippingAddress.findFirst({
+      where: { id, userId },
+    });
+
+    if (!address) {
+      throw new Error('Unauthorized: You do not own this shipping address.');
+    }
+  }
+
+  async createShippingAddress(userId: number, data: {
     fullName: string;
     addressLine1: string;
     addressLine2?: string;
@@ -17,19 +26,19 @@ export class ShippingAddressService {
   }) {
     return this.prisma.shippingAddress.create({
       data: {
-        userId: data.userId,
-        fullName: data.fullName,
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2,
-        city: data.city,
-        state: data.state,
-        country: data.country,
-        postalCode: data.postalCode,
+        userId,
+        ...data,
       },
     });
   }
 
-  async updateShippingAddress(id: number, data: {
+  async getShippingAddresses(userId: number) {
+    return this.prisma.shippingAddress.findMany({
+      where: { userId },
+    });
+  }
+
+  async updateShippingAddress(userId: number, id: number, data: {
     fullName?: string;
     addressLine1?: string;
     addressLine2?: string;
@@ -38,13 +47,17 @@ export class ShippingAddressService {
     country?: string;
     postalCode?: string;
   }) {
+    await this.validateAddressOwnership(userId, id);
+
     return this.prisma.shippingAddress.update({
       where: { id },
       data,
     });
   }
 
-  async deleteShippingAddress(id: number) {
+  async deleteShippingAddress(userId: number, id: number) {
+    await this.validateAddressOwnership(userId, id);
+
     return this.prisma.shippingAddress.delete({
       where: { id },
     });

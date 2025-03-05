@@ -1,10 +1,12 @@
+import { ShippingAddressService } from 'modules/shipping-address/shipping-address.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'prisma/prisma.service';
-import { ShippingAddressService } from 'modules/shipping-address/shipping-address.service';
 
 const mockPrismaService = {
   shippingAddress: {
     create: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   },
@@ -30,8 +32,8 @@ describe('ShippingAddressService', () => {
 
   describe('createShippingAddress', () => {
     it('should create a shipping address', async () => {
+      const userId = 1;
       const shippingAddressData = {
-        userId: 1,
         fullName: 'John Doe',
         addressLine1: '123 Main St',
         addressLine2: 'Apt 4B',
@@ -41,21 +43,43 @@ describe('ShippingAddressService', () => {
         postalCode: '12345',
       };
 
-      mockPrismaService.shippingAddress.create.mockResolvedValue(shippingAddressData);
+      const expectedResponse = { id: 1, userId, ...shippingAddressData };
 
-      const result = await service.createShippingAddress(shippingAddressData);
+      mockPrismaService.shippingAddress.create.mockResolvedValue(expectedResponse);
 
-      expect(result).toEqual(shippingAddressData);
+      const result = await service.createShippingAddress(userId, shippingAddressData);
+
+      expect(result).toEqual(expectedResponse);
       expect(mockPrismaService.shippingAddress.create).toHaveBeenCalledWith({
-        data: shippingAddressData,
+        data: { userId, ...shippingAddressData },
+      });
+    });
+  });
+
+  describe('getShippingAddresses', () => {
+    it('should return a list of shipping addresses for the user', async () => {
+      const userId = 1;
+      const shippingAddresses = [
+        { id: 1, userId, fullName: 'John Doe', addressLine1: '123 Main St', city: 'Anytown', state: 'CA', country: 'USA', postalCode: '12345' },
+        { id: 2, userId, fullName: 'Jane Doe', addressLine1: '456 Another St', city: 'Othertown', state: 'NY', country: 'USA', postalCode: '67890' },
+      ];
+
+      mockPrismaService.shippingAddress.findMany.mockResolvedValue(shippingAddresses);
+
+      const result = await service.getShippingAddresses(userId);
+
+      expect(result).toEqual(shippingAddresses);
+      expect(mockPrismaService.shippingAddress.findMany).toHaveBeenCalledWith({
+        where: { userId },
       });
     });
   });
 
   describe('updateShippingAddress', () => {
-    it('should update a shipping address', async () => {
-      const updatedShippingAddress = {
-        id: 1,
+    it('should update a shipping address if the user owns it', async () => {
+      const userId = 1;
+      const addressId = 1;
+      const updatedData = {
         fullName: 'Jane Doe',
         addressLine1: '456 New St',
         addressLine2: 'Suite 200',
@@ -65,56 +89,58 @@ describe('ShippingAddressService', () => {
         postalCode: '67890',
       };
 
-      mockPrismaService.shippingAddress.update.mockResolvedValue(updatedShippingAddress);
+      const updatedAddress = { id: addressId, userId, ...updatedData };
 
-      const result = await service.updateShippingAddress(1, {
-        fullName: 'Jane Doe',
-        addressLine1: '456 New St',
-        addressLine2: 'Suite 200',
-        city: 'Othertown',
-        state: 'NY',
-        country: 'USA',
-        postalCode: '67890',
+      mockPrismaService.shippingAddress.findFirst.mockResolvedValue(updatedAddress);
+      mockPrismaService.shippingAddress.update.mockResolvedValue(updatedAddress);
+
+      const result = await service.updateShippingAddress(userId, addressId, updatedData);
+
+      expect(result).toEqual(updatedAddress);
+      expect(mockPrismaService.shippingAddress.findFirst).toHaveBeenCalledWith({
+        where: { id: addressId, userId },
       });
-
-      expect(result).toEqual(updatedShippingAddress);
       expect(mockPrismaService.shippingAddress.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: {
-          fullName: 'Jane Doe',
-          addressLine1: '456 New St',
-          addressLine2: 'Suite 200',
-          city: 'Othertown',
-          state: 'NY',
-          country: 'USA',
-          postalCode: '67890',
-        },
+        where: { id: addressId },
+        data: updatedData,
       });
+    });
+
+    it('should throw an error if the user does not own the shipping address', async () => {
+      mockPrismaService.shippingAddress.findFirst.mockResolvedValue(null);
+
+      await expect(service.updateShippingAddress(1, 2, { fullName: 'Jane Doe' })).rejects.toThrow(
+        'Unauthorized: You do not own this shipping address.'
+      );
     });
   });
 
   describe('deleteShippingAddress', () => {
-    it('should delete a shipping address', async () => {
-      const shippingAddressToDelete = {
-        id: 1,
-        userId: 1,
-        fullName: 'John Doe',
-        addressLine1: '123 Main St',
-        addressLine2: 'Apt 4B',
-        city: 'Anytown',
-        state: 'CA',
-        country: 'USA',
-        postalCode: '12345',
-      };
+    it('should delete a shipping address if the user owns it', async () => {
+      const userId = 1;
+      const addressId = 1;
+      const shippingAddressToDelete = { id: addressId, userId };
 
+      mockPrismaService.shippingAddress.findFirst.mockResolvedValue(shippingAddressToDelete);
       mockPrismaService.shippingAddress.delete.mockResolvedValue(shippingAddressToDelete);
 
-      const result = await service.deleteShippingAddress(1);
+      const result = await service.deleteShippingAddress(userId, addressId);
 
       expect(result).toEqual(shippingAddressToDelete);
-      expect(mockPrismaService.shippingAddress.delete).toHaveBeenCalledWith({
-        where: { id: 1 },
+      expect(mockPrismaService.shippingAddress.findFirst).toHaveBeenCalledWith({
+        where: { id: addressId, userId },
       });
+      expect(mockPrismaService.shippingAddress.delete).toHaveBeenCalledWith({
+        where: { id: addressId },
+      });
+    });
+
+    it('should throw an error if the user does not own the shipping address', async () => {
+      mockPrismaService.shippingAddress.findFirst.mockResolvedValue(null);
+
+      await expect(service.deleteShippingAddress(1, 2)).rejects.toThrow(
+        'Unauthorized: You do not own this shipping address.'
+      );
     });
   });
 });
