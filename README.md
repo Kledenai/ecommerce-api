@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
+
 # Ecommerce API
 
 A scalable and high-performance e-commerce API built with NestJS, TypeScript, and PostgreSQL. Designed for modularity, security, and efficiency, featuring JWT authentication and Prisma ORM.
