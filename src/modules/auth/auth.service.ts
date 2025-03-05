@@ -1,42 +1,42 @@
-import * as bcrypt from 'bcryptjs';
-import { JwtService } from '@nestjs/jwt';
-import { UserService } from 'modules/user/user.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from 'prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private usersService: UserService,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
 
   async validateUser(email: string, password: string) {
-    const user = await this.usersService.getUserByEmail(email);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        status: true,
+      },
+    });
 
-    console.log(email, password)
-    
     if (!user) {
       return null;
     }
 
-    const isPasswordValid = bcrypt.compareSync(password, user.password);
-
-    if (!isPasswordValid) {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       return null;
     }
-    
-    const { password: _, ...result } = user;
-    return result;
+
+    return user;
   }
 
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id };
+  async login(user: { id: number; email: string; name: string; status: string }) {
+    const payload = { sub: user.id, email: user.email };
 
     try {
-      const token = this.jwtService.sign(payload);
-
       return {
-        token,
+        token: this.jwtService.sign(payload),
         user: {
           id: user.id,
           name: user.name,
