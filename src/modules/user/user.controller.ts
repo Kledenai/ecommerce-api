@@ -1,18 +1,19 @@
-import {
-  Get,
-  Put,
-  Post,
-  Body,
-  Param,
-  Delete,
-  UseGuards,
-  Controller,
-} from '@nestjs/common';
-import { UserService } from 'modules/user/user.service';
-import { JwtAuthGuard } from 'modules/auth/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateUserDto } from 'modules/user/dtos/create-user.dto';
 import { UpdateUserDto } from 'modules/user/dtos/update-user.dto';
-import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'modules/auth/jwt-auth.guard';
+import { UserService } from 'modules/user/user.service';
+import {
+  ParseIntPipe,
+  Controller,
+  UseGuards,
+  Delete,
+  Param,
+  Post,
+  Body,
+  Get,
+  Put,
+} from '@nestjs/common';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -26,7 +27,8 @@ export class UserController {
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({ status: 201, description: 'User created successfully.' })
   async createUser(@Body() body: CreateUserDto) {
-    return this.userService.createUser(body);
+    const user = await this.userService.createUser(body);
+    return { message: 'User created successfully', user };
   }
 
   @Get()
@@ -41,7 +43,7 @@ export class UserController {
   @ApiParam({ name: 'id', type: 'number', example: 1 })
   @ApiResponse({ status: 200, description: 'User retrieved successfully.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async getUserById(@Param('id') id: number) {
+  async getUserById(@Param('id', ParseIntPipe) id: number) {
     return this.userService.getUserById(id);
   }
 
@@ -51,7 +53,7 @@ export class UserController {
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'User updated successfully.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async updateUser(@Param('id') id: number, @Body() body: UpdateUserDto) {
+  async updateUser(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateUserDto) {
     return this.userService.updateUser(id, body);
   }
 
@@ -60,7 +62,7 @@ export class UserController {
   @ApiParam({ name: 'id', type: 'number', example: 1 })
   @ApiResponse({ status: 200, description: 'User deleted successfully.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async deleteUser(@Param('id') id: number) {
+  async deleteUser(@Param('id', ParseIntPipe) id: number) {
     return this.userService.deleteUser(id);
   }
 }

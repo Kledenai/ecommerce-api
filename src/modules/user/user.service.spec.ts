@@ -1,6 +1,12 @@
+import { UserService } from 'modules/user/user.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'prisma/prisma.service';
-import { UserService } from 'modules/user/user.service';
+import { NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('hashed-password'),
+}));
 
 const mockPrismaService = {
   user: {
@@ -31,21 +37,36 @@ describe('UserService', () => {
   });
 
   describe('createUser', () => {
-    it('should create a user', async () => {
+    it('should create a user with hashed password', async () => {
       const userData = {
         email: 'user@example.com',
         password: 'password123',
         name: 'John Doe',
       };
 
-      mockPrismaService.user.create.mockResolvedValue(userData);
+      const savedUser = { ...userData, password: 'hashed-password' };
+
+      mockPrismaService.user.create.mockResolvedValue(savedUser);
 
       const result = await service.createUser(userData);
 
-      expect(result).toEqual(userData);
+      expect(result).toEqual(savedUser);
       expect(mockPrismaService.user.create).toHaveBeenCalledWith({
-        data: userData,
+        data: { ...userData, password: 'hashed-password' },
       });
+      expect(bcrypt.hash).toHaveBeenCalledWith(userData.password, 10);
+    });
+
+    it('should throw an error if email is already in use', async () => {
+      mockPrismaService.user.create.mockRejectedValue({ code: 'P2002' });
+
+      await expect(
+        service.createUser({
+          email: 'user@example.com',
+          password: 'password123',
+          name: 'John Doe',
+        }),
+      ).rejects.toThrow('Email already in use');
     });
   });
 
@@ -67,11 +88,7 @@ describe('UserService', () => {
 
   describe('getUserById', () => {
     it('should return a user by ID', async () => {
-      const user = {
-        id: 1,
-        email: 'user@example.com',
-        name: 'John Doe',
-      };
+      const user = { id: 1, email: 'user@example.com', name: 'John Doe' };
 
       mockPrismaService.user.findUnique.mockResolvedValue(user);
 
@@ -83,54 +100,104 @@ describe('UserService', () => {
       });
     });
 
-    it('should throw an error if user is not found', async () => {
+    it('should throw NotFoundException if user does not exist', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.getUserById(999)).rejects.toThrowError(
-        'User not found',
+      await expect(service.getUserById(999)).rejects.toThrow(
+        new NotFoundException('User not found'),
       );
     });
   });
+
+  describe('getUserByEmail', () => {
+    it('should return a user by email', async () => {
+      const user = { id: 1, email: 'user@example.com', name: 'John Doe' };
+  
+      mockPrismaService.user.findUnique.mockResolvedValue(user);
+  
+      const result = await service.getUserByEmail('user@example.com');
+  
+      expect(result).toEqual(user);
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'user@example.com' },
+        select: { id: true, email: true, name: true },
+      });
+    });
+  
+    it('should throw NotFoundException if user does not exist', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+  
+      await expect(service.getUserByEmail('nonexistent@example.com'))
+        .rejects
+        .toThrow(NotFoundException);
+    });
+  });  
 
   describe('updateUser', () => {
     it('should update a user', async () => {
       const updatedUser = {
         id: 1,
-        email: 'updateduser@example.com',
+        email: 'updated@example.com',
         name: 'Updated Name',
       };
 
       mockPrismaService.user.update.mockResolvedValue(updatedUser);
 
       const result = await service.updateUser(1, {
-        email: 'updateduser@example.com',
+        email: 'updated@example.com',
         name: 'Updated Name',
       });
 
       expect(result).toEqual(updatedUser);
       expect(mockPrismaService.user.update).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { email: 'updateduser@example.com', name: 'Updated Name' },
+        data: { email: 'updated@example.com', name: 'Updated Name' },
       });
+    });
+
+    it('should hash password before updating', async () => {
+      const updatedUser = {
+        id: 1,
+        email: 'updated@example.com',
+        name: 'Updated Name',
+        password: 'hashed-password',
+      };
+
+      mockPrismaService.user.update.mockResolvedValue(updatedUser);
+
+      const result = await service.updateUser(1, {
+        email: 'updated@example.com',
+        name: 'Updated Name',
+        password: 'newpassword',
+      });
+
+      expect(result).toEqual(updatedUser);
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { email: 'updated@example.com', name: 'Updated Name', password: 'hashed-password' },
+      });
+      expect(bcrypt.hash).toHaveBeenCalledWith('newpassword', 10);
     });
   });
 
   describe('deleteUser', () => {
     it('should delete a user', async () => {
-      const userToDelete = {
-        id: 1,
-        email: 'user@example.com',
-        name: 'John Doe',
-      };
+      const userToDelete = { id: 1, email: 'user@example.com', name: 'John Doe' };
 
       mockPrismaService.user.delete.mockResolvedValue(userToDelete);
 
       const result = await service.deleteUser(1);
 
       expect(result).toEqual(userToDelete);
-      expect(mockPrismaService.user.delete).toHaveBeenCalledWith({
-        where: { id: 1 },
-      });
+      expect(mockPrismaService.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      mockPrismaService.user.delete.mockRejectedValue(new NotFoundException('User not found'));
+
+      await expect(service.deleteUser(999)).rejects.toThrow(
+        new NotFoundException('User not found'),
+      );
     });
   });
 });
