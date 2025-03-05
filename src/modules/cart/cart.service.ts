@@ -11,6 +11,24 @@ export class CartService {
     });
   }
 
+  async getCartById(id: number, userId: number) {
+    const cart = await this.prisma.cart.findUnique({
+      where: {
+        id,
+        userId,
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+  
+    return cart;
+  }
+
   async getCartByUserId(userId: number) {
     const cart = await this.prisma.cart.findFirst({
       where: { userId },
@@ -26,24 +44,46 @@ export class CartService {
     return cart;
   }
   
-  async updateCart(id: number, data: { productId: number; quantity: number }) {
-    return this.prisma.cartItem.update({
+  async updateCart(id: number, userId: number, data: { productId: number; quantity: number }) {
+    const cart = await this.prisma.cart.findFirst({
+      where: { userId },
+      select: { id: true },
+    });
+  
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    const result = await this.prisma.cartItem.updateMany({
       where: {
-        cartId_productId: {
-          cartId: id,
-          productId: data.productId,
-        },
+        cartId: cart.id,
+        productId: data.productId,
       },
       data: {
         quantity: data.quantity,
       },
     });
+  
+    if (result.count === 0) {
+      throw new Error("Product not found in cart or unauthorized");
+    }
+  
+    return { message: "Cart updated successfully" };
   }
   
 
-  async deleteCart(id: number) {
+  async deleteCart(id: number, userId: number) {
+    const cart = await this.prisma.cart.findFirst({
+      where: { id: id, userId },
+      select: { id: true },
+    });
+  
+    if (!cart) {
+      throw new Error("Cart not found or unauthorized");
+    }
+  
     return this.prisma.cart.delete({
-      where: { id },
+      where: { id: cart.id },
     });
   }
 }
