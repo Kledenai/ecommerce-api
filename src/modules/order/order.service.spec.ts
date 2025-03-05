@@ -1,11 +1,12 @@
+import { OrderService } from 'modules/order/order.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'prisma/prisma.service';
-import { OrderService } from 'modules/order/order.service';
 
 const mockPrismaService = {
   order: {
     create: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   },
@@ -14,10 +15,6 @@ const mockPrismaService = {
   },
   product: {
     findMany: jest.fn(),
-  },
-  cart: {
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
   },
 };
 
@@ -111,33 +108,57 @@ describe('OrderService', () => {
   });
 
   describe('updateOrder', () => {
-    it('should update the order status', async () => {
+    it('should update the order status if user owns the order', async () => {
       const updatedOrder = { id: 1, userId: 1, status: 'SHIPPED' };
 
+      mockPrismaService.order.findFirst.mockResolvedValue(updatedOrder);
       mockPrismaService.order.update.mockResolvedValue(updatedOrder);
 
-      const result = await service.updateOrder(1, { status: 'SHIPPED' });
+      const result = await service.updateOrder(1, 1, { status: 'SHIPPED' });
 
       expect(result).toEqual(updatedOrder);
+      expect(mockPrismaService.order.findFirst).toHaveBeenCalledWith({
+        where: { id: 1, userId: 1 },
+      });
       expect(mockPrismaService.order.update).toHaveBeenCalledWith({
         where: { id: 1 },
         data: { status: 'SHIPPED' },
       });
     });
+
+    it('should throw an error if the user does not own the order', async () => {
+      mockPrismaService.order.findFirst.mockResolvedValue(null);
+
+      await expect(service.updateOrder(1, 2, { status: 'SHIPPED' })).rejects.toThrow(
+        'Unauthorized: You do not own this order.'
+      );
+    });
   });
 
   describe('deleteOrder', () => {
-    it('should delete an order', async () => {
+    it('should delete an order if user owns it', async () => {
       const orderToDelete = { id: 1, userId: 1, status: 'PENDING' };
 
+      mockPrismaService.order.findFirst.mockResolvedValue(orderToDelete);
       mockPrismaService.order.delete.mockResolvedValue(orderToDelete);
 
-      const result = await service.deleteOrder(1);
+      const result = await service.deleteOrder(1, 1);
 
       expect(result).toEqual(orderToDelete);
+      expect(mockPrismaService.order.findFirst).toHaveBeenCalledWith({
+        where: { id: 1, userId: 1 },
+      });
       expect(mockPrismaService.order.delete).toHaveBeenCalledWith({
         where: { id: 1 },
       });
+    });
+
+    it('should throw an error if the user does not own the order', async () => {
+      mockPrismaService.order.findFirst.mockResolvedValue(null);
+
+      await expect(service.deleteOrder(1, 2)).rejects.toThrow(
+        'Unauthorized: You do not own this order.'
+      );
     });
   });
 });
