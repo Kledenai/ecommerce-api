@@ -18,18 +18,20 @@ export class AuthService {
         status: true,
       },
     });
-
+  
     if (!user) {
       return null;
     }
-
+  
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return null;
     }
-
-    return user;
+    
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
+  
 
   async login(user: { id: number; email: string; name: string; status: string }) {
     const payload = { sub: user.id, email: user.email };
